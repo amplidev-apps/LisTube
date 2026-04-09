@@ -11,6 +11,7 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private MainPageViewModel _mainPageViewModel;
 
+    private readonly QueueViewModel _queueViewModel = new QueueViewModel();
     private readonly SettingsViewModel _settingsViewModel = new SettingsViewModel();
     private readonly AboutViewModel _aboutViewModel = new AboutViewModel();
     private readonly HelpViewModel _helpViewModel = new HelpViewModel();
@@ -24,7 +25,13 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateHome()
     {
-        CurrentView = _mainPageViewModel;
+        CurrentView = MainPageViewModel;
+    }
+
+    [RelayCommand]
+    private void NavigateQueue()
+    {
+        CurrentView = _queueViewModel;
     }
 
     [RelayCommand]

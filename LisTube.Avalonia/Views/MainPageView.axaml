@@ -102,7 +102,13 @@
                                       VerticalAlignment="Center"
                                       Margin="0,0,15,0"
                                       Width="250" />
-                            <Button Content="Download Selected"
+                            <Button Content="Add to Queue"
+                                    Command="{Binding AddToQueueCommand}"
+                                    Padding="30,12"
+                                    Margin="0,0,10,0"
+                                    Background="#28A745"
+                                    Foreground="White" />
+                            <Button Content="Direct Download"
                                     Command="{Binding DownloadCommand}"
                                     Padding="30,12"
                                     Background="#007ACC"

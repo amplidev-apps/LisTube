@@ -142,6 +142,33 @@ public partial class MainPageViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task AddToQueueAsync()
+    {
+        var selectedVideos = Videos.Where(v => v.IsSelected).ToList();
+        if (selectedVideos.Count == 0) return;
+
+        // Buscando o QueueViewModel através da injeção de dependência ou referência
+        // Para simplificar nesse cenário, vamos usar uma comunicação direta via MainViewModel ou Singleton se necessário.
+        // Como o MainViewModel detém as instâncias, vamos expor um evento ou usar um padrão de mensagens.
+        
+        // Pelo tempo e complexidade, vamos disparar um evento que o MainViewModel ou o próprio Gerenciador Global capture.
+        var task = new PlaylistDownloadTask
+        {
+            Title = PlaylistTitle,
+            Status = "Na Fila...",
+            ProgressText = $"0/{selectedVideos.Count}"
+        };
+
+        // Vamos precisar de um lugar central para as Tasks ativas.
+        // Adicionando ao singleton ou serviço global.
+        DownloadQueueManager.Instance.AddTask(task, selectedVideos, SelectedFormat);
+        
+        StatusMessage = "Playlist adicionada à fila!";
+        await Task.Delay(2000);
+        StatusMessage = string.Empty;
+    }
+
+    [RelayCommand]
     private async Task DownloadAsync()
     {
         var selectedVideos = Videos.Where(v => v.IsSelected).ToList();

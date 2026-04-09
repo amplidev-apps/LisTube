@@ -10,6 +10,9 @@
         <DataTemplate DataType="{x:Type vm:MainPageViewModel}">
             <views:MainPageView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:QueueViewModel}">
+            <views:QueueView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
             <views:SettingsView />
         </DataTemplate>

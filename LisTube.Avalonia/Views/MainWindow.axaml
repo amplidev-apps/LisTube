@@ -20,6 +20,7 @@
         <!-- Menu Bar -->
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_Home" Command="{Binding NavigateHomeCommand}" />
+            <MenuItem Header="_Queue" Command="{Binding NavigateQueueCommand}" />
             <MenuItem Header="_Settings" Command="{Binding NavigateSettingsCommand}" />
             <MenuItem Header="_About" Command="{Binding NavigateAboutCommand}" />
             <MenuItem Header="_Help" Command="{Binding NavigateHelpCommand}" />
