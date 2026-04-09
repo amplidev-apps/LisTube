@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LisTube.Avalonia.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             x:Class="LisTube.Avalonia.Views.MainPageView"
+             x:DataType="vm:MainPageViewModel">
+
+    <Design.DataContext>
+        <vm:MainPageViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#2D2D30" Padding="20">
+            <StackPanel>
+                <TextBlock Text="LisTube"
+                          FontSize="32"
+                          FontWeight="Bold"
+                          Foreground="#FFFFFF"
+                          HorizontalAlignment="Center" />
+                <TextBlock Text="YouTube Playlist Downloader"
+                          FontSize="14"
+                          Foreground="#AAAAAA"
+                          HorizontalAlignment="Center"
+                          Margin="0,5,0,0" />
+            </StackPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="30" Spacing="15">
+                <!-- URL Input -->
+                <Border Background="#3E3E42"
+                        CornerRadius="8"
+                        Padding="20">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="{DynamicResource InsertYoutubePlaylistLinkHere}"
+                                  Foreground="#FFFFFF"
+                                  FontSize="14" />
+                        <TextBox Text="{Binding YoutubeUrl}"
+                                Watermark="https://youtube.com/playlist?list=..."
+                                Height="40"
+                                FontSize="14" />
+                        <Button Content="Load Playlist"
+                                Command="{Binding LoadPlaylistCommand}"
+                                HorizontalAlignment="Right"
+                                Padding="20,10" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Playlist Info -->
+                <Border Background="#3E3E42"
+                        CornerRadius="8"
+                        Padding="20"
+                        IsVisible="{Binding IsPlaylistLoaded}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="{Binding PlaylistTitle}"
+                                  FontSize="18"
+                                  FontWeight="Bold"
+                                  Foreground="#FFFFFF"
+                                  TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding PlaylistAuthor}"
+                                  Foreground="#AAAAAA"
+                                  FontSize="14" />
+                        <TextBlock Text="{Binding VideoCount}"
+                                  Foreground="#AAAAAA"
+                                  FontSize="14" />
+
+                        <ListBox ItemsSource="{Binding Videos}"
+                                Height="200"
+                                Background="#2D2D30">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Image Grid.Column="0"
+                                               Source="{Binding ThumbnailUrl}"
+                                               Width="120"
+                                               Height="68"
+                                               Stretch="UniformToFill"
+                                               Margin="0,0,10,0" />
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}"
+                                                      Foreground="#FFFFFF"
+                                                      TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Duration}"
+                                                      Foreground="#AAAAAA"
+                                                      FontSize="12" />
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="2"
+                                                 IsChecked="{Binding IsSelected}"
+                                                 VerticalAlignment="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <ComboBox ItemsSource="{Binding DownloadFormats}"
+                                      SelectedItem="{Binding SelectedFormat}"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,15,0"
+                                      Width="250" />
+                            <Button Content="Download Selected"
+                                    Command="{Binding DownloadCommand}"
+                                    Padding="30,12"
+                                    Background="#007ACC"
+                                    Foreground="White" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Status/Progress -->
+                <Border Background="#3E3E42"
+                        CornerRadius="8"
+                        Padding="20"
+                        IsVisible="{Binding IsDownloading}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="{Binding StatusMessage}"
+                                  Foreground="#FFFFFF" />
+                        <ProgressBar Value="{Binding ProgressPercent}"
+                                    Maximum="100"
+                                    Height="20" />
+                        <TextBlock Text="{Binding ProgressText}"
+                                  Foreground="#AAAAAA"
+                                  HorizontalAlignment="Right" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="#2D2D30" Padding="10">
+            <TextBlock Text="{Binding VersionInfo}"
+                      Foreground="#888888"
+                      FontSize="12"
+                      HorizontalAlignment="Center" />
+        </Border>
+    </Grid>
+</UserControl>

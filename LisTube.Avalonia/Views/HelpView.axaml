@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LisTube.Avalonia.ViewModels"
+             x:Class="LisTube.Avalonia.Views.HelpView"
+             x:DataType="vm:HelpViewModel">
+    <Border Background="#2D2D30" Padding="30">
+        <ScrollViewer>
+            <StackPanel Spacing="25">
+                <TextBlock Text="Manual do Usuário — LisTube" FontSize="26" FontWeight="Bold" Foreground="White" />
+                
+                <StackPanel Spacing="10">
+                    <TextBlock Text="1. Inserindo Links e Carregamento" FontSize="18" FontWeight="SemiBold" Foreground="#4A90E2"/>
+                    <TextBlock Text="Cole o link completo de qualquer Playlist ou Vídeo único do YouTube na caixa texto da aba inicial." TextWrapping="Wrap" Foreground="#CCCCCC"/>
+                    <TextBlock Text="Exemplo: https://youtube.com/playlist?list=XXXXXXX..." Foreground="#888888" FontStyle="Italic"/>
+                    <TextBlock Text="Após colar e clicar em 'Load Playlist', aguarde enquanto o motor interno varre do YouTube cada um dos vídeos para você." TextWrapping="Wrap" Foreground="#CCCCCC"/>
+                </StackPanel>
+
+                <StackPanel Spacing="10">
+                    <TextBlock Text="2. Filtragem de Baixas e Escolha de Formatos" FontSize="18" FontWeight="SemiBold" Foreground="#4A90E2"/>
+                    <TextBlock Text="Automaticamente todos os vídeos detectados já virão marcados na lista para baixar. Se quiser poupar espaço, simplesmente desmarque da caixinha azul no canto de cada um os arquivos que você quiser deixar de fora." TextWrapping="Wrap" Foreground="#CCCCCC"/>
+                    <TextBlock Text="A Mágica acontece perto do botão 'Download'. Aquele menu ali dita as regras do robô: Escolha MP3 e usufrua de ultra qualidade nativa a 320kbps extraída pelo motor da AmpliDEV, ou opte pela opção Vídeo (MP4) tradicional." TextWrapping="Wrap" Foreground="#CCCCCC"/>
+                </StackPanel>
+
+                <StackPanel Spacing="10">
+                    <TextBlock Text="3. Gestão e Separação de Mídia (Aba Settings)" FontSize="18" FontWeight="SemiBold" Foreground="#4A90E2"/>
+                    <TextBlock Text="Nós separamos tudo em duas pastas diferentes! Clique no topo da tela em 'Settings'. Você não precisa se preocupar de vídeos ficarem misturados em sua biblioteca de Músicas!" TextWrapping="Wrap" Foreground="#CCCCCC"/>
+                    <TextBlock Text="Diga nas configurações exatamente qual pasta local do seu Linux receberá os seus arquivos de Áudio, e qual receberá de Vídeo. Feito isso, tudo baixado pelo Avalonia será direcionado na raiz sem engasgos!" TextWrapping="Wrap" Foreground="#CCCCCC"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Border>
+</UserControl>

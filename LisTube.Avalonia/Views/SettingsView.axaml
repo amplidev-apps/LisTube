@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LisTube.Avalonia.ViewModels"
+             x:Class="LisTube.Avalonia.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+    <Border Background="#2D2D30" Padding="30">
+        <StackPanel Spacing="25">
+            <TextBlock Text="Caminhos de Download" FontSize="24" FontWeight="Bold" Foreground="White" />
+            
+            <StackPanel Spacing="10">
+                <TextBlock Text="Pasta oficial para armazenar suas Músicas/Áudios:" Foreground="#AAAAAA" />
+                <Grid ColumnDefinitions="*, Auto">
+                    <TextBox Text="{Binding AudioSavePath}" Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <Button Content="Procurar Pasta..." Click="BrowseAudio_Click" Grid.Column="1" Padding="15,8" Background="#007ACC" Foreground="White"/>
+                </Grid>
+            </StackPanel>
+            
+            <StackPanel Spacing="10">
+                <TextBlock Text="Pasta oficial para armazenar seus Vídeos (MP4):" Foreground="#AAAAAA" />
+                <Grid ColumnDefinitions="*, Auto">
+                    <TextBox Text="{Binding VideoSavePath}" Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <Button Content="Procurar Pasta..." Click="BrowseVideo_Click" Grid.Column="1" Padding="15,8" Background="#007ACC" Foreground="White"/>
+                </Grid>
+            </StackPanel>
+            
+            <TextBlock Text="Nota: Os arquívos serão baixados e convertidos automaticamente para as pastas listadas." FontStyle="Italic" Foreground="#777777" Margin="0,20,0,0" />
+        </StackPanel>
+    </Border>
+</UserControl>

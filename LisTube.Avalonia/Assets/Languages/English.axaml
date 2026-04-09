@@ -1,0 +1,30 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=System.Runtime">
+
+    <system:String x:Key="InsertYoutubePlaylistLinkHere">Insert a YouTube link here</system:String>
+    <system:String x:Key="Exit">Exit</system:String>
+    <system:String x:Key="ExitMessage">Are you sure you want to exit?</system:String>
+    <system:String x:Key="Yes">Yes</system:String>
+    <system:String x:Key="No">No</system:String>
+    <system:String x:Key="Error">Error</system:String>
+    <system:String x:Key="Settings">Settings</system:String>
+    <system:String x:Key="Back">Back</system:String>
+    <system:String x:Key="DarkTheme">Dark Theme</system:String>
+    <system:String x:Key="Name">Name:</system:String>
+    <system:String x:Key="SaveDirectory">Save videos to:</system:String>
+    <system:String x:Key="CurrentlyDownloading">Currently downloading:</system:String>
+    <system:String x:Key="TotalProgress">Downloaded so far:</system:String>
+    <system:String x:Key="AllDone">All Done.</system:String>
+    <system:String x:Key="Canceling">Cancelling your downloads, please wait...</system:String>
+    <system:String x:Key="Videos">Videos</system:String>
+    <system:String x:Key="Download">Download</system:String>
+    <system:String x:Key="files">files</system:String>
+    <system:String x:Key="Author">Author:</system:String>
+    <system:String x:Key="PlaylistTitle">Title:</system:String>
+    <system:String x:Key="Loading">Loading...</system:String>
+    <system:String x:Key="About">About</system:String>
+    <system:String x:Key="Home">Home</system:String>
+    <system:String x:Key="TotalVideos">Total videos:</system:String>
+
+</ResourceDictionary>

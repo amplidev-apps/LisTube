@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:LisTube.Avalonia.ViewModels"
+             x:Class="LisTube.Avalonia.Views.AboutView"
+             x:DataType="vm:AboutViewModel">
+    <Border Background="#2D2D30" Padding="30">
+        <StackPanel Spacing="15">
+            <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold" Foreground="White" />
+            <TextBlock Text="LisTube is a multi-platform YouTube Downloader." Foreground="#AAAAAA" />
+            <TextBlock Text="Developed entirely by AmpliDEV using Avalonia UI." Foreground="#AAAAAA" />
+        </StackPanel>
+    </Border>
+</UserControl>
