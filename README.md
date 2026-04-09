@@ -14,6 +14,5 @@ Entirely re-imagined from the ground up by AmpliDEV.
 - Comfortable update system
 - Multi-language support: English, Arabic, Chinese, Dutch (NL), French, German, Hebrew, Italian, Polish, Portuguese (BR), Romanian, Russian, Spanish, and Turkish
 
-## Screenshots
-![Gif](https://i.imgur.com/bQw4fVm.gif "Gif")
+
 
