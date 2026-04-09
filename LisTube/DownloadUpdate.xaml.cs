@@ -95,7 +95,7 @@ public partial class DownloadUpdate : UserControl, IDownload
         downloadFinished = false;
         GlobalConsts.UpdateSetupLocation = $"{GlobalConsts.TempFolderPath}Setup {latestVersion}.exe";
 
-        ImageUrl = $"https://raw.githubusercontent.com/amplimusic/LisTube/master/LisTube/finalIcon.ico";
+        ImageUrl = $"https://raw.githubusercontent.com/amplidev-apps/LisTube/master/LisTube/finalIcon.ico";
         Title = $"{FindResource("DownloadingUpdateSetup")}";
         CurrentStatus = (string)FindResource("Loading");
         TotalDownloaded = $"(0/1)";
@@ -115,7 +115,7 @@ public partial class DownloadUpdate : UserControl, IDownload
         await Dispatcher.InvokeAsync(() => HeadlineTextBlock.Text = $"{FindResource("DownloadingUpdateSetup")}");
         using var fs = new ProgressStream(new FileStream(GlobalConsts.UpdateSetupLocation, FileMode.Create));
         fs.BytesWritten += DownloadProgressChanged;
-        var latestVersionLink = await httpClient.GetAsync("https://raw.githubusercontent.com/amplimusic/LisTube/master/LisTube/latestVersionLink.txt").ConfigureAwait(false);
+        var latestVersionLink = await httpClient.GetAsync("https://raw.githubusercontent.com/amplidev-apps/LisTube/master/LisTube/latestVersionLink.txt").ConfigureAwait(false);
         var response = await httpClient.GetAsync(await latestVersionLink.Content.ReadAsStringAsync().ConfigureAwait(false)).ConfigureAwait(false);
         await Dispatcher.InvokeAsync(() => CurrentDownloadProgressBar.Maximum = response.Content.Headers.ContentLength ?? 0);
         await response.Content.CopyToAsync(fs, cancellationTokenSource.Token).ContinueWith(async a =>

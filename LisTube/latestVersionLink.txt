@@ -1,1 +1,1 @@
-https://github.com/amplimusic/LisTube/releases/download/1.9.33/LisTube.exe
+https://github.com/amplidev-apps/LisTube/releases/download/1.9.33/LisTube.exe

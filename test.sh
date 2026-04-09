@@ -94,13 +94,13 @@ test_step $? "Temp path uses LisTube"
 
 echo ""
 echo "[Test 8/10] Checking update URLs..."
-grep -q "amplimusic/LisTube" LisTube/About.xaml.cs
+grep -q "amplidev-apps/LisTube" LisTube/About.xaml.cs
 test_step $? "About.xaml.cs uses new GitHub URL"
 
-grep -q "amplimusic/LisTube" LisTube/Skeleton.xaml.cs
+grep -q "amplidev-apps/LisTube" LisTube/Skeleton.xaml.cs
 test_step $? "Skeleton.xaml.cs uses new GitHub URL"
 
-grep -q "amplimusic/LisTube" LisTube/DownloadUpdate.xaml.cs
+grep -q "amplidev-apps/LisTube" LisTube/DownloadUpdate.xaml.cs
 test_step $? "DownloadUpdate.xaml.cs uses new GitHub URL"
 
 echo ""
