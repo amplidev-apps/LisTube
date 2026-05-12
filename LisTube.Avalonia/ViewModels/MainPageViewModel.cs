@@ -11,15 +11,13 @@ using YoutubeExplode;
 using YoutubeExplode.Common;
 using YoutubeExplode.Playlists;
 using YoutubeExplode.Videos;
-using YoutubeExplode.Videos.Streams;
-using YoutubeExplode.Converter;
 using LisTube.Avalonia.Models;
+using LisTube.Avalonia.Services;
 
 namespace LisTube.Avalonia.ViewModels;
 
 public partial class MainPageViewModel : ViewModelBase
 {
-    private readonly YoutubeClient _youtubeClient;
     private CancellationTokenSource? _cancellationTokenSource;
 
     [ObservableProperty]
@@ -39,6 +37,12 @@ public partial class MainPageViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _videoCount = string.Empty;
+
+    [ObservableProperty]
+    private string _errorMessage = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasError;
 
     public ObservableCollection<string> DownloadFormats { get; } = new()
     {
@@ -67,10 +71,60 @@ public partial class MainPageViewModel : ViewModelBase
     private string _versionInfo = "LisTube v1.0.0";
 
     private Playlist? _currentPlaylist;
+    private bool _isSingleVideo;
 
-    public MainPageViewModel()
+    [ObservableProperty]
+    private bool _isSplitEnabled;
+
+    [ObservableProperty]
+    private string _splitText = string.Empty;
+
+    public bool IsSplitVisible =>
+        _isSingleVideo && !SelectedFormat.Contains("Vídeo");
+
+    partial void OnSelectedFormatChanged(string value)
     {
-        _youtubeClient = new YoutubeClient();
+        OnPropertyChanged(nameof(IsSplitVisible));
+    }
+
+    private static string ExtractCleanVideoId(string url)
+    {
+        // Handle HTML-encoded &amp; in URLs copied from web pages
+        url = url.Replace("&amp;", "&");
+
+        // Handle youtu.be URLs
+        if (url.Contains("youtu.be"))
+        {
+            var uri = new Uri(url);
+            var id = uri.AbsolutePath.TrimStart('/');
+            var qIndex = id.IndexOf('?');
+            return qIndex > 0 ? id[..qIndex] : id;
+        }
+
+        // Handle youtube.com URLs - extract v parameter properly
+        if (url.Contains("youtube.com/watch") || url.Contains("/live/") || url.Contains("/shorts/"))
+        {
+            var uri = new Uri(url);
+            var query = uri.Query.TrimStart('?');
+            foreach (var part in query.Split('&'))
+            {
+                var kv = part.Split('=');
+                if (kv.Length == 2 && kv[0] == "v")
+                    return kv[1];
+            }
+            // If no v param in query, fall through
+        }
+
+        // For /shorts/ URLs, extract from path
+        if (url.Contains("/shorts/"))
+        {
+            var uri = new Uri(url);
+            var id = uri.AbsolutePath.TrimStart('/').Replace("shorts/", "");
+            var qIndex = id.IndexOf('?');
+            return qIndex > 0 ? id[..qIndex] : id;
+        }
+
+        return url;
     }
 
     [RelayCommand]
@@ -81,22 +135,30 @@ public partial class MainPageViewModel : ViewModelBase
 
         try
         {
-            StatusMessage = "Loading playlist...";
+            HasError = false;
+            ErrorMessage = string.Empty;
+            StatusMessage = "Carregando...";
             IsPlaylistLoaded = false;
+            _isSingleVideo = false;
+            IsSplitEnabled = false;
+            SplitText = string.Empty;
 
-            // Try to get playlist
-            if (YoutubeUrl.Contains("playlist?list="))
+            var url = YoutubeUrl.Trim();
+
+            if (url.Contains("playlist?list="))
             {
-                var playlistId = PlaylistId.Parse(YoutubeUrl);
-                _currentPlaylist = await _youtubeClient.Playlists.GetAsync(playlistId);
+                var playlistId = PlaylistId.Parse(url);
+                _currentPlaylist = await YoutubeClientFactory.Current.Playlists.GetAsync(playlistId);
 
                 PlaylistTitle = _currentPlaylist.Title;
-                PlaylistAuthor = $"Author: {_currentPlaylist.Author}";
+                PlaylistAuthor = $"Autor: {_currentPlaylist.Author}";
 
-                var videos = await _youtubeClient.Playlists.GetVideosAsync(playlistId).CollectAsync();
-                VideoCount = $"Total videos: {videos.Count}";
+                var videos = await YoutubeClientFactory.Current.Playlists.GetVideosAsync(playlistId).CollectAsync();
+                VideoCount = $"Total de vídeos: {videos.Count}";
 
                 Videos.Clear();
+                _isSingleVideo = false;
+                OnPropertyChanged(nameof(IsSplitVisible));
                 foreach (var video in videos)
                 {
                     Videos.Add(new VideoItem
@@ -110,34 +172,77 @@ public partial class MainPageViewModel : ViewModelBase
                     });
                 }
             }
-            else if (YoutubeUrl.Contains("youtube.com/watch") || YoutubeUrl.Contains("youtu.be"))
+            else if (url.Contains("youtube.com/watch") || url.Contains("youtu.be")
+                     || url.Contains("/live/") || url.Contains("/shorts/"))
             {
-                // Single video
-                var videoId = VideoId.Parse(YoutubeUrl);
-                var video = await _youtubeClient.Videos.GetAsync(videoId);
+                var cleanUrl = ExtractCleanVideoId(url);
+                var videoId = VideoId.Parse(cleanUrl);
 
-                PlaylistTitle = video.Title;
-                PlaylistAuthor = $"Author: {video.Author.ToString()}";
-                VideoCount = "Total videos: 1";
-
-                Videos.Clear();
-                Videos.Add(new VideoItem
+                try
                 {
-                    Id = video.Id,
-                    Title = video.Title,
-                    Author = video.Author.ToString(),
-                    Duration = video.Duration?.ToString() ?? "Unknown",
-                    ThumbnailUrl = video.Thumbnails.FirstOrDefault()?.Url ?? "",
-                    IsSelected = true
-                });
+                    var video = await YoutubeClientFactory.Current.Videos.GetAsync(videoId);
+
+                    PlaylistTitle = video.Title;
+                    PlaylistAuthor = $"Autor: {video.Author.ToString()}";
+                    VideoCount = "Total de vídeos: 1";
+
+                    Videos.Clear();
+                    _isSingleVideo = true;
+                    OnPropertyChanged(nameof(IsSplitVisible));
+                    Videos.Add(new VideoItem
+                    {
+                        Id = video.Id,
+                        Title = video.Title,
+                        Author = video.Author.ToString(),
+                        Duration = video.Duration?.ToString() ?? "Unknown",
+                        ThumbnailUrl = video.Thumbnails.FirstOrDefault()?.Url ?? "",
+                        IsSelected = true
+                    });
+                }
+                catch (YoutubeExplode.Exceptions.VideoUnplayableException ex)
+                {
+                    // Video requires auth but yt-dlp may still download it
+                    // Show what we can with the video ID
+                    PlaylistTitle = $"Vídeo: {videoId.Value}";
+                    PlaylistAuthor = "(requer autenticação)";
+                    VideoCount = "Total de vídeos: 1";
+
+                    Videos.Clear();
+                    _isSingleVideo = true;
+                    OnPropertyChanged(nameof(IsSplitVisible));
+                    Videos.Add(new VideoItem
+                    {
+                        Id = videoId,
+                        Title = $"Vídeo protegido - {videoId.Value}",
+                        Author = "YouTube",
+                        Duration = "?",
+                        IsSelected = true
+                    });
+                    StatusMessage = $"Aviso: {ex.Message} — tente baixar mesmo assim (yt-dlp pode funcionar)";
+                }
+            }
+            else
+            {
+                HasError = true;
+                ErrorMessage = "URL não suportada. Use links de vídeo (watch, youtu.be, live, shorts) ou playlist do YouTube.";
+                return;
             }
 
             IsPlaylistLoaded = true;
+            if (string.IsNullOrEmpty(StatusMessage))
+                StatusMessage = "";
+        }
+        catch (YoutubeExplode.Exceptions.VideoUnavailableException ex)
+        {
+            HasError = true;
+            ErrorMessage = $"Vídeo indisponível: {ex.Message}";
             StatusMessage = "";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Error: {ex.Message}";
+            HasError = true;
+            ErrorMessage = $"Erro: {ex.Message}";
+            StatusMessage = "";
         }
     }
 
@@ -188,7 +293,9 @@ public partial class MainPageViewModel : ViewModelBase
             }
 
             int completed = 0;
+            int failed = 0;
             int total = selectedVideos.Count;
+            double currentVideoProgress = 0;
 
             foreach (var videoItem in selectedVideos)
             {
@@ -197,32 +304,49 @@ public partial class MainPageViewModel : ViewModelBase
 
                 StatusMessage = $"Downloading: {videoItem.Title}";
                 ProgressText = $"({completed + 1}/{total})";
+                currentVideoProgress = 0;
 
                 try
                 {
-                    var video = await _youtubeClient.Videos.GetAsync(videoItem.Id);
                     var safeTitle = string.Join("_", videoItem.Title.Split(Path.GetInvalidFileNameChars()));
-                    
-                    if (SelectedFormat.Contains("Vídeo"))
+                    var videoUrl = $"https://www.youtube.com/watch?v={videoItem.Id}";
+
+                    var filePath = SelectedFormat.Contains("Vídeo")
+                        ? Path.Combine(saveDirectory, $"{safeTitle}.mp4")
+                        : SelectedFormat.Contains("M4A")
+                            ? Path.Combine(saveDirectory, $"{safeTitle}.m4a")
+                            : Path.Combine(saveDirectory, $"{safeTitle}.mp3");
+
+                    var videoProgress = new Progress<double>(p =>
                     {
-                        var filePath = Path.Combine(saveDirectory, $"{safeTitle}.mp4");
-                        await _youtubeClient.Videos.DownloadAsync(videoItem.Id, filePath, builder => builder.SetContainer("mp4"), cancellationToken: _cancellationTokenSource.Token);
-                    }
-                    else if (SelectedFormat.Contains("320kbps"))
+                        currentVideoProgress = p;
+                        ProgressPercent = ((completed + p) / total) * 100;
+                    });
+
+                    await YtDlpService.DownloadAsync(videoUrl, filePath, SelectedFormat, videoProgress, _cancellationTokenSource.Token);
+
+                    if (IsSplitEnabled && !string.IsNullOrWhiteSpace(SplitText) && !SelectedFormat.Contains("Vídeo"))
                     {
-                        var filePath = Path.Combine(saveDirectory, $"{safeTitle}.mp3");
-                        // Forces standard high-quality MP3 (FFMPEG manages the upscaling automatically under the hood for MP3 when targeting from highest opus stream)
-                        await _youtubeClient.Videos.DownloadAsync(videoItem.Id, filePath, builder => builder.SetContainer("mp3"), cancellationToken: _cancellationTokenSource.Token);
-                    }
-                    else if (SelectedFormat.Contains("Padrão"))
-                    {
-                        var filePath = Path.Combine(saveDirectory, $"{safeTitle}.mp3");
-                        await _youtubeClient.Videos.DownloadAsync(videoItem.Id, filePath, builder => builder.SetContainer("mp3"), cancellationToken: _cancellationTokenSource.Token);
-                    }
-                    else
-                    {
-                        var filePath = Path.Combine(saveDirectory, $"{safeTitle}.m4a");
-                        await _youtubeClient.Videos.DownloadAsync(videoItem.Id, filePath, builder => builder.SetContainer("m4a"), cancellationToken: _cancellationTokenSource.Token);
+                        StatusMessage = $"Dividindo: {videoItem.Title}";
+                        var segments = AudioSplitter.ParseSplitText(SplitText);
+
+                        if (segments.Count > 0)
+                        {
+                            var splitProgress = new Progress<double>(p =>
+                            {
+                                ProgressPercent = ((completed + 0.9 + p * 0.09) / total) * 100;
+                            });
+
+                            await AudioSplitter.SplitAsync(filePath, segments, saveDirectory, splitProgress, _cancellationTokenSource.Token);
+
+                            try { File.Delete(filePath); } catch { }
+
+                            StatusMessage = $"Dividido em {segments.Count} faixas: {videoItem.Title}";
+                        }
+                        else
+                        {
+                            StatusMessage = $"Aviso: texto de split inválido — arquivo completo mantido: {videoItem.Title}";
+                        }
                     }
 
                     completed++;
@@ -230,12 +354,16 @@ public partial class MainPageViewModel : ViewModelBase
                 }
                 catch (Exception ex)
                 {
-                    StatusMessage = $"Error downloading {videoItem.Title}: {ex.Message}";
-                    await Task.Delay(2000);
+                    failed++;
+                    StatusMessage = $"Falha: {videoItem.Title} - {ex.Message}";
+                    await Task.Delay(3000);
                 }
             }
 
-            StatusMessage = "Download complete!";
+            if (failed > 0)
+                StatusMessage = $"Download concluído com {failed} falha(s). {completed}/{total} sucesso(s).";
+            else
+                StatusMessage = "Download completo!";
         }
         catch (Exception ex)
         {

@@ -23,7 +23,37 @@
                 </Grid>
             </StackPanel>
             
-            <TextBlock Text="Nota: Os arquívos serão baixados e convertidos automaticamente para as pastas listadas." FontStyle="Italic" Foreground="#777777" Margin="0,20,0,0" />
+            <TextBlock Text="Nota: Os arquivos serão baixados e convertidos automaticamente para as pastas listadas." FontStyle="Italic" Foreground="#777777" Margin="0,20,0,0" />
+
+            <Separator Background="#555" Margin="0,10" />
+
+            <TextBlock Text="Cookies do YouTube (opcional)" FontSize="24" FontWeight="Bold" Foreground="White" />
+
+            <StackPanel Spacing="8">
+                <TextBlock Text="Se algum vídeo aparecer como indisponível mas funciona no navegador, cole aqui os cookies do YouTube exportados do seu navegador:" Foreground="#AAAAAA" TextWrapping="Wrap" />
+                <TextBox Text="{Binding CookiesText}"
+                         Watermark="Cole os cookies no formato Netscape aqui..."
+                         Height="150"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         FontSize="12"
+                         FontFamily="Consolas, Courier New, monospace" />
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="Limpar Cookies"
+                            Command="{Binding ClearCookiesCommand}"
+                            Padding="15,8"
+                            Background="#CC4444"
+                            Foreground="White" />
+                    <Button Content="Instruções"
+                            Command="{Binding ShowInstructionsCommand}"
+                            Padding="15,8"
+                            Background="#007ACC"
+                            Foreground="White" />
+                </StackPanel>
+                <TextBlock Text="{Binding CookieStatus}"
+                           Foreground="#66FF66"
+                           FontSize="12" />
+            </StackPanel>
         </StackPanel>
     </Border>
 </UserControl>

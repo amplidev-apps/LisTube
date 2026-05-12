@@ -55,51 +55,85 @@ public partial class MainPage : UserControl
             {
                 _ = Task.Run(async () =>
                 {
-                    var basePlaylist = await client.Playlists.GetAsync(playlistId.Value).ConfigureAwait(false);
-                    list = new FullPlaylist(basePlaylist, await client.Playlists.GetVideosAsync(basePlaylist.Id).CollectAsync().ConfigureAwait(false));
-                    VideoList = new List<PlaylistVideo>();
-                    await UpdatePlaylistInfo(Visibility.Visible, list.BasePlaylist.Title, list.BasePlaylist.Author?.ChannelTitle ?? "", "", list.Videos.Count().ToString(), $"https://img.youtube.com/vi/{list?.Videos?.FirstOrDefault()?.Id}/maxresdefault.jpg", true, true);
+                    try
+                    {
+                        var basePlaylist = await client.Playlists.GetAsync(playlistId.Value).ConfigureAwait(false);
+                        list = new FullPlaylist(basePlaylist, await client.Playlists.GetVideosAsync(basePlaylist.Id).CollectAsync().ConfigureAwait(false));
+                        VideoList = new List<PlaylistVideo>();
+                        await UpdatePlaylistInfo(Visibility.Visible, list.BasePlaylist.Title, list.BasePlaylist.Author?.ChannelTitle ?? "", "", list.Videos.Count().ToString(), $"https://img.youtube.com/vi/{list?.Videos?.FirstOrDefault()?.Id}/maxresdefault.jpg", true, true);
+                    }
+                    catch (Exception innerEx)
+                    {
+                        await GlobalConsts.ShowMessage("Erro", $"Falha ao carregar playlist: {innerEx.Message}").ConfigureAwait(false);
+                    }
                 }).ConfigureAwait(false);
             }
             else if (YoutubeHelpers.TryParseChannelId(PlaylistLinkTextBox.Text, out var channelId))
             {
                 _ = Task.Run(async () =>
                 {
-                    channel = await client.Channels.GetAsync(channelId).ConfigureAwait(false);
-                    list = new FullPlaylist(null, null, channel.Title);
-                    VideoList = await client.Channels.GetUploadsAsync(channel.Id).CollectAsync().ConfigureAwait(false);
-                    await UpdatePlaylistInfo(Visibility.Visible, channel.Title, totalVideos: VideoList.Count().ToString(), imageUrl: channel.Thumbnails.FirstOrDefault()?.Url, downloadEnabled: true, showIndexes: true);
+                    try
+                    {
+                        channel = await client.Channels.GetAsync(channelId).ConfigureAwait(false);
+                        list = new FullPlaylist(null, null, channel.Title);
+                        VideoList = await client.Channels.GetUploadsAsync(channel.Id).CollectAsync().ConfigureAwait(false);
+                        await UpdatePlaylistInfo(Visibility.Visible, channel.Title, totalVideos: VideoList.Count().ToString(), imageUrl: channel.Thumbnails.FirstOrDefault()?.Url, downloadEnabled: true, showIndexes: true);
+                    }
+                    catch (Exception innerEx)
+                    {
+                        await GlobalConsts.ShowMessage("Erro", $"Falha ao carregar canal: {innerEx.Message}").ConfigureAwait(false);
+                    }
                 }).ConfigureAwait(false);
             }
             else if (YoutubeHelpers.TryParseUsername(PlaylistLinkTextBox.Text, out var username))
             {
                 _ = Task.Run(async () =>
                 {
-                    var channel = await client.Channels.GetByUserAsync(username).ConfigureAwait(false);
-                    list = new FullPlaylist(null, null, channel.Title);
-                    VideoList = await client.Channels.GetUploadsAsync(channel.Id).CollectAsync().ConfigureAwait(false);
-                    await UpdatePlaylistInfo(Visibility.Visible, channel.Title, totalVideos: VideoList.Count().ToString(), imageUrl: channel.Thumbnails.FirstOrDefault()?.Url, downloadEnabled: true, showIndexes: true);
+                    try
+                    {
+                        var channel = await client.Channels.GetByUserAsync(username).ConfigureAwait(false);
+                        list = new FullPlaylist(null, null, channel.Title);
+                        VideoList = await client.Channels.GetUploadsAsync(channel.Id).CollectAsync().ConfigureAwait(false);
+                        await UpdatePlaylistInfo(Visibility.Visible, channel.Title, totalVideos: VideoList.Count().ToString(), imageUrl: channel.Thumbnails.FirstOrDefault()?.Url, downloadEnabled: true, showIndexes: true);
+                    }
+                    catch (Exception innerEx)
+                    {
+                        await GlobalConsts.ShowMessage("Erro", $"Falha ao carregar usuário: {innerEx.Message}").ConfigureAwait(false);
+                    }
                 }).ConfigureAwait(false);
             }
             else if (YoutubeHelpers.TryParseHandle(PlaylistLinkTextBox.Text, out var handle))
             {
                 _ = Task.Run(async () =>
                 {
-                    var channel = await client.Channels.GetByHandleAsync(handle).ConfigureAwait(false);
-                    list = new FullPlaylist(null, null, channel.Title);
-                    VideoList = await client.Channels.GetUploadsAsync(channel.Id).CollectAsync().ConfigureAwait(false);
-                    await UpdatePlaylistInfo(Visibility.Visible, channel.Title, totalVideos: VideoList.Count().ToString(), imageUrl: channel.Thumbnails.FirstOrDefault()?.Url, downloadEnabled: true, showIndexes: true);
+                    try
+                    {
+                        var channel = await client.Channels.GetByHandleAsync(handle).ConfigureAwait(false);
+                        list = new FullPlaylist(null, null, channel.Title);
+                        VideoList = await client.Channels.GetUploadsAsync(channel.Id).CollectAsync().ConfigureAwait(false);
+                        await UpdatePlaylistInfo(Visibility.Visible, channel.Title, totalVideos: VideoList.Count().ToString(), imageUrl: channel.Thumbnails.FirstOrDefault()?.Url, downloadEnabled: true, showIndexes: true);
+                    }
+                    catch (Exception innerEx)
+                    {
+                        await GlobalConsts.ShowMessage("Erro", $"Falha ao carregar canal: {innerEx.Message}").ConfigureAwait(false);
+                    }
                 }).ConfigureAwait(false);
             }
             else if (YoutubeHelpers.TryParseVideoId(PlaylistLinkTextBox.Text, out var videoId))
             {
                 _ = Task.Run(async () =>
                 {
-                    var video = await client.Videos.GetAsync(videoId);
-                    VideoList = new List<Video> { video };
-                    list = new FullPlaylist(null, null);
-                    await UpdatePlaylistInfo(Visibility.Visible, video.Title, video.Author.ChannelTitle, video.Engagement.ViewCount.ToString(), string.Empty, $"https://img.youtube.com/vi/{video.Id}/maxresdefault.jpg", true, false);
-
+                    try
+                    {
+                        var video = await client.Videos.GetAsync(videoId);
+                        VideoList = new List<Video> { video };
+                        list = new FullPlaylist(null, null);
+                        await UpdatePlaylistInfo(Visibility.Visible, video.Title, video.Author.ChannelTitle, video.Engagement.ViewCount.ToString(), string.Empty, $"https://img.youtube.com/vi/{video.Id}/maxresdefault.jpg", true, false);
+                    }
+                    catch (Exception innerEx)
+                    {
+                        await GlobalConsts.ShowMessage("Erro", $"Falha ao carregar vídeo: {innerEx.Message}").ConfigureAwait(false);
+                    }
                 }).ConfigureAwait(false);
             }
             else

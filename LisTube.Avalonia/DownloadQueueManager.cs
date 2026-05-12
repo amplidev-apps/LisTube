@@ -6,8 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using LisTube.Avalonia.Models;
-using YoutubeExplode;
-using YoutubeExplode.Converter;
+using LisTube.Avalonia.Services;
 
 namespace LisTube.Avalonia;
 
@@ -18,7 +17,6 @@ public class DownloadQueueManager
 
     public ObservableCollection<PlaylistDownloadTask> QueueItems { get; } = new();
     
-    private readonly YoutubeClient _youtubeClient = new();
     private readonly SemaphoreSlim _semaphore = new(20); // Limite de 20 simultâneos pedido pelo usuário
 
     public void AddTask(PlaylistDownloadTask task, List<VideoItem> videos, string format)
@@ -45,31 +43,24 @@ public class DownloadQueueManager
                 try
                 {
                     var safeTitle = string.Join("_", videoItem.Title.Split(Path.GetInvalidFileNameChars()));
-                    
-                    if (format.Contains("Vídeo"))
+                    var videoUrl = $"https://www.youtube.com/watch?v={videoItem.Id}";
+
+                    var filePath = format.Contains("Vídeo")
+                        ? Path.Combine(saveDirectory, $"{safeTitle}.mp4")
+                        : format.Contains("M4A")
+                            ? Path.Combine(saveDirectory, $"{safeTitle}.m4a")
+                            : Path.Combine(saveDirectory, $"{safeTitle}.mp3");
+
+                    var videoProgress = new Progress<double>(p =>
                     {
-                        var filePath = Path.Combine(saveDirectory, $"{safeTitle}.mp4");
-                        await _youtubeClient.Videos.DownloadAsync(videoItem.Id, filePath, builder => builder.SetContainer("mp4"));
-                    }
-                    else if (format.Contains("320kbps"))
-                    {
-                        var filePath = Path.Combine(saveDirectory, $"{safeTitle}.mp3");
-                        await _youtubeClient.Videos.DownloadAsync(videoItem.Id, filePath, builder => builder.SetContainer("mp3").SetPreset(ConversionPreset.UltraFast));
-                    }
-                    else if (format.Contains("Padrão"))
-                    {
-                        var filePath = Path.Combine(saveDirectory, $"{safeTitle}.mp3");
-                        await _youtubeClient.Videos.DownloadAsync(videoItem.Id, filePath, builder => builder.SetContainer("mp3"));
-                    }
-                    else
-                    {
-                        var filePath = Path.Combine(saveDirectory, $"{safeTitle}.m4a");
-                        await _youtubeClient.Videos.DownloadAsync(videoItem.Id, filePath, builder => builder.SetContainer("m4a"));
-                    }
+                        task.Progress = ((completed + p) / total) * 100;
+                    });
+
+                    await YtDlpService.DownloadAsync(videoUrl, filePath, format, videoProgress);
                 }
                 catch (Exception ex)
                 {
-                    // Log error for specific video but continue playlist
+                    System.Diagnostics.Debug.WriteLine($"[DownloadQueueManager] Erro no vídeo '{videoItem.Title}': {ex.Message}");
                 }
 
                 completed++;
