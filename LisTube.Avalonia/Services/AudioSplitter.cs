@@ -77,7 +77,7 @@ public static class AudioSplitter
         string sourceFile,
         IReadOnlyList<SplitSegment> segments,
         string outputDirectory,
-        IProgress<double>? progress = null,
+        Action<double, string>? onProgress = null,
         CancellationToken ct = default)
     {
         if (!File.Exists(sourceFile))
@@ -149,39 +149,40 @@ public static class AudioSplitter
             foreach (var arg in args)
                 process.StartInfo.ArgumentList.Add(arg);
 
-            var errorOutput = new StringWriter();
-            process.ErrorDataReceived += (_, e) =>
-            {
-                if (e.Data != null)
-                    errorOutput.WriteLine(e.Data);
-            };
-
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            process.Exited += (_, _) =>
-            {
-                if (process.ExitCode == 0)
-                    tcs.TrySetResult();
-                else
-                {
-                    var stderr = errorOutput.ToString();
-                    var summary = ExtractFfmpegError(stderr);
-                    tcs.TrySetException(new InvalidOperationException(
-                        $"ffmpeg falhou ao dividir '{segment.Name}' (código {process.ExitCode}): {summary}"));
-                }
-            };
-
             ct.Register(() =>
             {
                 try { process.Kill(); } catch { }
-                tcs.TrySetCanceled();
             });
 
             process.Start();
-            process.BeginErrorReadLine();
-            await tcs.Task;
 
-            progress?.Report((double)(i + 1) / totalSegments);
+            var errorOutput = new StringWriter();
+            var stderrTask = Task.Run(async () =>
+            {
+                try
+                {
+                    string? line;
+                    while ((line = await process.StandardError.ReadLineAsync(ct).ConfigureAwait(false)) != null)
+                    {
+                        errorOutput.WriteLine(line);
+                    }
+                }
+                catch (OperationCanceledException) { }
+                catch (ObjectDisposedException) { }
+            }, ct);
+
+            await process.WaitForExitAsync(ct).ConfigureAwait(false);
+            await stderrTask.ConfigureAwait(false);
+
+            if (process.ExitCode != 0)
+            {
+                var stderr = errorOutput.ToString();
+                var summary = ExtractFfmpegError(stderr);
+                throw new InvalidOperationException(
+                    $"ffmpeg falhou ao dividir '{segment.Name}' (código {process.ExitCode}): {summary}");
+            }
+
+            onProgress?.Invoke((double)(i + 1) / totalSegments, $"{FormatTimestamp(segment.Start)} - {segment.Name}");
         }
     }
 

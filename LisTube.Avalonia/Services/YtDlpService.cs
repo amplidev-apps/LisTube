@@ -46,7 +46,7 @@ public static class YtDlpService
         string videoUrl,
         string outputFilePath,
         string format,
-        IProgress<double>? progress = null,
+        Action<double, string>? onProgress = null,
         CancellationToken cancellationToken = default)
     {
         var args = BuildArgsList(videoUrl, outputFilePath, format);
@@ -64,51 +64,59 @@ public static class YtDlpService
         foreach (var arg in args)
             process.StartInfo.ArgumentList.Add(arg);
 
-        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var errorOutput = new StringWriter();
-
-        process.EnableRaisingEvents = true;
-
-        process.ErrorDataReceived += (_, e) =>
-        {
-            if (e.Data != null)
-                errorOutput.WriteLine(e.Data);
-        };
-
-        process.OutputDataReceived += (_, e) =>
-        {
-            if (e.Data != null && progress != null)
-            {
-                var match = ProgressRegex.Match(e.Data);
-                if (match.Success && double.TryParse(match.Groups[1].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var pct))
-                {
-                    try { progress.Report(pct / 100.0); } catch { }
-                }
-            }
-        };
-
-        process.Exited += (_, _) =>
-        {
-            if (process.ExitCode == 0)
-                tcs.TrySetResult();
-            else
-            {
-                var stderr = errorOutput.ToString();
-                tcs.TrySetException(new InvalidOperationException(
-                    $"yt-dlp falhou (código {process.ExitCode}): {ExtractError(stderr)}"));
-            }
-        };
-
         cancellationToken.Register(() =>
         {
             try { process.Kill(); } catch { }
-            tcs.TrySetCanceled();
         });
 
         process.Start();
-        process.BeginErrorReadLine();
-        process.BeginOutputReadLine();
-        await tcs.Task;
+
+        // Drain stdout to prevent pipe deadlock
+        var stdoutTask = Task.Run(async () =>
+        {
+            try
+            {
+                await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch { }
+        }, cancellationToken);
+
+        // Read stderr line-by-line — yt-dlp outputs progress [download] XX% to stderr
+        var errorOutput = new StringWriter();
+        var stderrTask = Task.Run(async () =>
+        {
+            try
+            {
+                string? line;
+                while ((line = await process.StandardError.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
+                {
+                    errorOutput.WriteLine(line);
+                    if (onProgress != null)
+                    {
+                        var match = ProgressRegex.Match(line);
+                        if (match.Success && double.TryParse(match.Groups[1].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var pct))
+                        {
+                            onProgress(pct, line);
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (ObjectDisposedException) { }
+        }, cancellationToken);
+
+        // Wait for process to exit
+        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+
+        // Ensure both readers finish
+        await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
+
+        if (process.ExitCode != 0)
+        {
+            var stderr = errorOutput.ToString();
+            throw new InvalidOperationException(
+                $"yt-dlp falhou (código {process.ExitCode}): {ExtractError(stderr)}");
+        }
     }
 
     private static string ExtractError(string output)

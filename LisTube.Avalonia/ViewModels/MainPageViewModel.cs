@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using YoutubeExplode;
@@ -19,6 +20,9 @@ namespace LisTube.Avalonia.ViewModels;
 public partial class MainPageViewModel : ViewModelBase
 {
     private CancellationTokenSource? _cancellationTokenSource;
+    private double _pendingProgress;
+    private string _pendingProgressText = "";
+    private global::Avalonia.Threading.DispatcherTimer? _progressTimer;
 
     [ObservableProperty]
     private string _youtubeUrl = string.Empty;
@@ -295,7 +299,6 @@ public partial class MainPageViewModel : ViewModelBase
             int completed = 0;
             int failed = 0;
             int total = selectedVideos.Count;
-            double currentVideoProgress = 0;
 
             foreach (var videoItem in selectedVideos)
             {
@@ -304,7 +307,19 @@ public partial class MainPageViewModel : ViewModelBase
 
                 StatusMessage = $"Downloading: {videoItem.Title}";
                 ProgressText = $"({completed + 1}/{total})";
-                currentVideoProgress = 0;
+                _pendingProgress = 0;
+                _pendingProgressText = "";
+
+                _progressTimer = new global::Avalonia.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(200)
+                };
+                _progressTimer.Tick += (_, _) =>
+                {
+                    ProgressPercent = _pendingProgress;
+                    ProgressText = _pendingProgressText;
+                };
+                _progressTimer.Start();
 
                 try
                 {
@@ -317,13 +332,22 @@ public partial class MainPageViewModel : ViewModelBase
                             ? Path.Combine(saveDirectory, $"{safeTitle}.m4a")
                             : Path.Combine(saveDirectory, $"{safeTitle}.mp3");
 
-                    var videoProgress = new Progress<double>(p =>
-                    {
-                        currentVideoProgress = p;
-                        ProgressPercent = ((completed + p) / total) * 100;
-                    });
+                    var progressRegex = new Regex(@"of\s+([\d.]+)\s*(\w+B)\s+at\s+([\d.]+)\s*(\w+B/s)\s+ETA\s+([\w:]+)", RegexOptions.Compiled);
 
-                    await YtDlpService.DownloadAsync(videoUrl, filePath, SelectedFormat, videoProgress, _cancellationTokenSource.Token);
+                    void OnProgress(double pct, string line)
+                    {
+                        var overall = ((completed + pct / 100.0) / total) * 100;
+
+                        var detail = "";
+                        var m = progressRegex.Match(line);
+                        if (m.Success)
+                            detail = $"  {m.Groups[1].Value}{m.Groups[2].Value} at {m.Groups[3].Value}{m.Groups[4].Value} ETA {m.Groups[5].Value}";
+
+                        _pendingProgress = overall;
+                        _pendingProgressText = $"({completed + 1}/{total}) {pct:F1}%{detail}";
+                    }
+
+                    await YtDlpService.DownloadAsync(videoUrl, filePath, SelectedFormat, OnProgress, _cancellationTokenSource.Token);
 
                     if (IsSplitEnabled && !string.IsNullOrWhiteSpace(SplitText) && !SelectedFormat.Contains("Vídeo"))
                     {
@@ -332,12 +356,14 @@ public partial class MainPageViewModel : ViewModelBase
 
                         if (segments.Count > 0)
                         {
-                            var splitProgress = new Progress<double>(p =>
+                            void OnSplitProgress(double p, string desc)
                             {
-                                ProgressPercent = ((completed + 0.9 + p * 0.09) / total) * 100;
-                            });
+                                var overall = ((completed + 0.9 + p * 0.09) / total) * 100;
+                                _pendingProgress = overall;
+                                _pendingProgressText = $"({completed + 1}/{total}) Split {p * segments.Count:F0}/{segments.Count}";
+                            }
 
-                            await AudioSplitter.SplitAsync(filePath, segments, saveDirectory, splitProgress, _cancellationTokenSource.Token);
+                            await AudioSplitter.SplitAsync(filePath, segments, saveDirectory, OnSplitProgress, _cancellationTokenSource.Token);
 
                             try { File.Delete(filePath); } catch { }
 
@@ -350,13 +376,19 @@ public partial class MainPageViewModel : ViewModelBase
                     }
 
                     completed++;
-                    ProgressPercent = (completed / (double)total) * 100;
+                    _pendingProgress = (completed / (double)total) * 100;
+                    ProgressPercent = _pendingProgress;
                 }
                 catch (Exception ex)
                 {
                     failed++;
                     StatusMessage = $"Falha: {videoItem.Title} - {ex.Message}";
                     await Task.Delay(3000);
+                }
+                finally
+                {
+                    _progressTimer.Stop();
+                    _progressTimer = null;
                 }
             }
 
@@ -372,7 +404,11 @@ public partial class MainPageViewModel : ViewModelBase
         finally
         {
             IsDownloading = false;
+            _progressTimer = null;
+            _pendingProgress = 0;
+            _pendingProgressText = "";
             ProgressPercent = 0;
+            ProgressText = "";
             _cancellationTokenSource?.Dispose();
             _cancellationTokenSource = null;
         }

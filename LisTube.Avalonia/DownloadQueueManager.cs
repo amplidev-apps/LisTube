@@ -51,12 +51,18 @@ public class DownloadQueueManager
                             ? Path.Combine(saveDirectory, $"{safeTitle}.m4a")
                             : Path.Combine(saveDirectory, $"{safeTitle}.mp3");
 
-                    var videoProgress = new Progress<double>(p =>
+                    void OnProgress(double pct, string line)
                     {
-                        task.Progress = ((completed + p) / total) * 100;
-                    });
+                        var progress = ((completed + pct / 100.0) / total) * 100;
+                        var status = $"Baixando: {pct:F1}%";
+                        global::Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            task.Progress = progress;
+                            task.Status = status;
+                        });
+                    }
 
-                    await YtDlpService.DownloadAsync(videoUrl, filePath, format, videoProgress);
+                    await YtDlpService.DownloadAsync(videoUrl, filePath, format, OnProgress);
                 }
                 catch (Exception ex)
                 {
